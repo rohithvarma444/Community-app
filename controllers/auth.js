@@ -3,6 +3,8 @@ import jwt from "jsonwebtoken";
 import { generateFromEmail } from "unique-username-generator";
 import prisma from "../db/prisma/db.js";
 import { UAParser } from "ua-parser-js";
+
+
 //generate a username from the email
 //MAX_RETRIES is 5 to avoid infinite loop
 async function generateUsername(email) {
@@ -120,7 +122,7 @@ export const loginUser = async(req,res)=> {
     console.log(token);
 
 
-    // in production, we need to use secure cookies so it can be retereived in xss attacks
+    // in production, we need to use secure cookies so it cant be retereived in xss attacks
     res.cookie("token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -141,30 +143,85 @@ export const loginUser = async(req,res)=> {
 }
 
 
-export const LogoutUser = async(req,res)=> {
-    const userId = req.user.id;
-    const sessionId = req.user.session;
+export const logoutUser = async (req, res) => {
+    try {
+        const token = req.cookies.token; 
 
-    try{
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                message: "User not authenticated"
+            });
+        }
+
         await prisma.session.deleteMany({
-                where: {
-                    session_id: sessionId
-                }
-            })
+            where: { token }
+        });
 
-            res.clearCookie("token");
+        res.clearCookie("token", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict"
+        });
 
-            return res.status(200).json({
-                success: true,
-                message: "User has been logged out successfully"
-            })
+        return res.status(200).json({
+            success: true,
+            message: "User has been logged out successfully"
+        });
+
     } catch (error) {
         return res.status(500).json({
             success: false,
             message: "Internal server error",
             error: error.message
-        })
-    }  
-}
+        });
+    }
+};
+
+
+export const logoutSession = async (req, res) => {
+    const { token } = req.params;
+    const userId = req.user.id;
+
+    try {
+        const session = await prisma.session.findUnique({
+            where: {
+                token: token,
+            },
+        });
+
+        if (!session) {
+            return res.status(404).json({
+                success: false,
+                message: "Session not found",
+            });
+        }
+
+        if (userId !== session.user_id) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized",
+            });
+        }
+
+        await prisma.session.delete({
+            where: {
+                token: token,
+            },
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Logged out successfully",
+        });
+    } catch (error) {
+        console.error("Error during logout:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Server error during logout",
+        });
+    }
+};
+
 
 

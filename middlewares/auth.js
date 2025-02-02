@@ -6,6 +6,8 @@ const prisma = new PrismaClient();
 
 
 //in production we can use cookies rather than authorization (as here postman doesnt store cookies using authorisation)
+//prod code
+//const token = req.cookies.token
 export const isLoggedin = async (req, res, next) => {
     try {
         if (!req.headers.authorization || !req.headers.authorization.startsWith("Bearer ")) {

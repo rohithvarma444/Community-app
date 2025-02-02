@@ -4,7 +4,7 @@ import { cloudinaryConnect } from "./config/cloudinary.js";
 import dotenv from "dotenv";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-
+import removeSessions from "./utils/scheduler.js";
 
 import fileUpload from "express-fileupload";
 import loginRoutes from "./routes/authRoutes.js";
@@ -40,7 +40,7 @@ app.use(
         },
     })
 );
-
+removeSessions();
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, 
     max: 100,
@@ -73,5 +73,7 @@ app.use((req, res) => {
 app.listen(PORT, () => {
     console.log(`Server is up and running on port ${PORT}`);
 });
+
+
 
 
