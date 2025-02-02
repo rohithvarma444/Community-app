@@ -1,0 +1,112 @@
+datasource db{
+    provider = "postgresql"
+    url = env("DATABASE_URL")
+}
+
+
+generator client{
+    provider = "prisma-client-js"
+}
+
+
+model User {
+    user_id      Int     @id @default(autoincrement())
+    username     String  @unique
+    email        String  @unique
+    password     String
+    bio          String?
+    mobileNumber String? @unique
+    profilePic   String?
+    Posts        Post[]
+    Polls        Poll[]
+    likes        Like[]
+    comments     Comment[]
+    PollVotes    PollVote[]
+    sessions     Session[]
+}
+
+model Post {
+    post_id      Int       @id @default(autoincrement())
+    description  String
+    user_id      Int
+    User         User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+    category_id  Int
+    Category     Category  @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
+    comments     Comment[]
+    Likes        Like[]
+    upload_file  String?
+    like_count   Int       @default(0)
+    comment_count Int      @default(0)
+    created_at   DateTime  @default(now())
+}
+
+model Comment {
+    comment_id   Int    @id @default(autoincrement())
+    user_id      Int
+    User         User   @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+    post_id      Int
+    Post         Post   @relation(fields: [post_id], references: [post_id], onDelete: Cascade)
+    content      String
+    created_at   DateTime @default(now())
+    @@unique([user_id, post_id])
+}
+
+model Like {
+    like_id      Int     @id @default(autoincrement())
+    user_id      Int
+    User         User    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+    post_id      Int
+    Post         Post    @relation(fields: [post_id], references: [post_id], onDelete: Cascade)
+    @@unique([user_id, post_id])
+}
+
+model Poll {
+    poll_id      Int       @id @default(autoincrement())
+    user_id      Int
+    User         User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+    poll_title   String
+    options      PollOption[]
+    votes        PollVote[]
+    created_at   DateTime  @default(now())
+}
+
+model PollOption {
+    option_id    Int     @id @default(autoincrement())
+    poll_id      Int
+    Poll         Poll    @relation(fields: [poll_id], references: [poll_id], onDelete: Cascade)
+    option_text  String
+    votes        PollVote[]
+
+    @@unique([poll_id,option_text])
+}
+
+model PollVote {
+  vote_id   Int        @id @default(autoincrement())
+  user      User       @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  user_id   Int
+  poll      Poll       @relation(fields: [poll_id], references: [poll_id], onDelete: Cascade)
+  poll_id   Int
+  option    PollOption @relation(fields: [option_id], references: [option_id], onDelete: Cascade)
+  option_id Int
+
+  @@unique([user_id, poll_id, option_id])
+}
+
+model Category {
+    category_id  Int    @id @default(autoincrement())
+    category_name String @unique
+    posts        Post[]
+}
+
+
+model Session {
+    session_id Int @id @default(autoincrement())
+    user_id Int
+    User User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+    token String @unique
+    expires_at DateTime
+    browser String
+    os String
+    device String
+    created_at DateTime @default(now())
+}
